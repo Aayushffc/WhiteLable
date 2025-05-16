@@ -13,18 +13,21 @@ namespace backend.Services;
 public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
         IConfiguration configuration,
         IEmailService emailService,
         ILogger<AuthService> logger
     )
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
         _emailService = emailService;
         _logger = logger;
@@ -48,6 +51,12 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
         {
             return (false, string.Join(", ", result.Errors.Select(e => e.Description)), null);
+        }
+
+        // Create User role if it doesn't exist
+        if (!await _roleManager.RoleExistsAsync("User"))
+        {
+            await _roleManager.CreateAsync(new IdentityRole("User"));
         }
 
         // Add user to default role

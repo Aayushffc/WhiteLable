@@ -19,15 +19,41 @@ public class RoleController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateRole([FromBody] string roleName)
+    [HttpPost("init")]
+    [AllowAnonymous]
+    public async Task<IActionResult> InitializeUserRole()
     {
-        var (success, message) = await _roleService.CreateRoleAsync(roleName);
-        if (!success)
+        var (success, message) = await _roleService.CreateRoleAsync("User");
+        if (!success && message != "Role already exists")
         {
             return BadRequest(new { message });
         }
 
+        return Ok(new { message = "User role initialized successfully" });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateRole([FromBody] string roleName)
+    {
+        if (string.IsNullOrWhiteSpace(roleName))
+        {
+            return BadRequest(new { message = "Role name cannot be empty" });
+        }
+
+        _logger.LogInformation("Attempting to create role: {RoleName}", roleName);
+
+        var (success, message) = await _roleService.CreateRoleAsync(roleName);
+        if (!success)
+        {
+            _logger.LogWarning(
+                "Failed to create role: {RoleName}. Error: {Message}",
+                roleName,
+                message
+            );
+            return BadRequest(new { message });
+        }
+
+        _logger.LogInformation("Successfully created role: {RoleName}", roleName);
         return Ok(new { message });
     }
 
