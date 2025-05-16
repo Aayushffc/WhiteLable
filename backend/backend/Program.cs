@@ -5,6 +5,7 @@ using backend.DBContext;
 using backend.Middleware;
 using backend.Models;
 using backend.Services;
+using backend.Services.CRM;
 using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -47,8 +48,17 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddSingleton<TenantDbContextFactory>();
 
+// Register CRM services
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IContactService, ContactService>();
+builder.Services.AddScoped<IDealService, DealService>();
+
 // Add AutoMapper
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies());
+    cfg.AddProfile<CRMMappingProfile>();
+});
 
 // CORS Configuration with fallback
 var allowedOriginsRaw =

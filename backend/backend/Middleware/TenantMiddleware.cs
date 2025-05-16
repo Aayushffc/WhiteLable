@@ -53,7 +53,9 @@ public class TenantMiddleware
             }
 
             // Create tenant-specific context
-            using var tenantContext = await dbContextFactory.CreateTenantDbContextAsync(tenantIdentifier);
+            using var tenantContext = await dbContextFactory.CreateTenantDbContextAsync(
+                tenantIdentifier
+            );
 
             // Add tenant context to the current request
             context.Items["TenantId"] = tenant.Id;
