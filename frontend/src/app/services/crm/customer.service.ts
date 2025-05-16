@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BaseCRMService } from './base-crm.service';
+import { AuthService } from '../auth/auth.service';
 
 export interface Customer {
   id: string;
@@ -10,9 +11,17 @@ export interface Customer {
   address?: string;
   company?: string;
   industry?: string;
+  status: CustomerStatus;
   notes?: string;
   createdAt: Date;
   updatedAt?: Date;
+}
+
+export enum CustomerStatus {
+  Lead = 'Lead',
+  Prospect = 'Prospect',
+  Customer = 'Customer',
+  Inactive = 'Inactive'
 }
 
 export interface CreateCustomerDTO {
@@ -22,6 +31,7 @@ export interface CreateCustomerDTO {
   address?: string;
   company?: string;
   industry?: string;
+  status: CustomerStatus;
   notes?: string;
 }
 
@@ -32,6 +42,7 @@ export interface UpdateCustomerDTO {
   address?: string;
   company?: string;
   industry?: string;
+  status?: CustomerStatus;
   notes?: string;
 }
 
@@ -39,7 +50,10 @@ export interface UpdateCustomerDTO {
   providedIn: 'root'
 })
 export class CustomerService extends BaseCRMService<Customer, CreateCustomerDTO, UpdateCustomerDTO> {
-  constructor(http: HttpClient) {
-    super(http, 'customers');
+  constructor(
+    http: HttpClient,
+    authService: AuthService
+  ) {
+    super(http, 'customers', authService);
   }
 }

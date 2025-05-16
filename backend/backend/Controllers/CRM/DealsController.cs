@@ -9,10 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers.CRM
 {
-    [Authorize]
-    [ApiController]
-    [Route("api/[controller]")]
-    public class DealsController : ControllerBase
+    [Authorize(Roles = "Admin,Manager,Sales")]
+    public class DealsController : BaseCRMController
     {
         private readonly IDealService _dealService;
 
@@ -24,105 +22,108 @@ namespace backend.Controllers.CRM
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DealDto>>> GetDeals()
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var deals = await _dealService.GetAllDealsAsync(tenantId);
-            return Ok(deals);
+            try
+            {
+                var tenantId = GetTenantId();
+                var deals = await _dealService.GetAllDealsAsync(tenantId);
+                return Ok(deals);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<DealDto>>(ex);
+            }
         }
 
         [HttpGet("customer/{customerId}")]
         public async Task<ActionResult<IEnumerable<DealDto>>> GetDealsByCustomer(Guid customerId)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var deals = await _dealService.GetDealsByCustomerAsync(customerId, tenantId);
-            return Ok(deals);
+            try
+            {
+                var tenantId = GetTenantId();
+                var deals = await _dealService.GetDealsByCustomerAsync(customerId, tenantId);
+                return Ok(deals);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<DealDto>>(ex);
+            }
         }
 
         [HttpGet("stage/{stage}")]
         public async Task<ActionResult<IEnumerable<DealDto>>> GetDealsByStage(DealStage stage)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var deals = await _dealService.GetDealsByStageAsync(stage, tenantId);
-            return Ok(deals);
+            try
+            {
+                var tenantId = GetTenantId();
+                var deals = await _dealService.GetDealsByStageAsync(stage, tenantId);
+                return Ok(deals);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<DealDto>>(ex);
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<DealDto>> GetDeal(Guid id)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 var deal = await _dealService.GetDealByIdAsync(id, tenantId);
                 return Ok(deal);
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException<DealDto>(ex);
             }
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Manager,Sales")]
         public async Task<ActionResult<DealDto>> CreateDeal(CreateDealDto dealDto)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var deal = await _dealService.CreateDealAsync(dealDto, tenantId);
-            return CreatedAtAction(nameof(GetDeal), new { id = deal.Id }, deal);
+            try
+            {
+                var tenantId = GetTenantId();
+                var deal = await _dealService.CreateDealAsync(dealDto, tenantId);
+                return CreatedAtAction(nameof(GetDeal), new { id = deal.Id }, deal);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<DealDto>(ex);
+            }
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateDeal(Guid id, UpdateDealDto dealDto)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 await _dealService.UpdateDealAsync(id, dealDto, tenantId);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException(ex);
             }
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteDeal(Guid id)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 await _dealService.DeleteDealAsync(id, tenantId);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException(ex);
             }
         }
     }

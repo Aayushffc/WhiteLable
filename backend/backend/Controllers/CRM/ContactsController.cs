@@ -8,10 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers.CRM
 {
-    [Authorize]
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ContactsController : ControllerBase
+    [Authorize(Roles = "Admin,Manager,Sales")]
+    public class ContactsController : BaseCRMController
     {
         private readonly IContactService _contactService;
 
@@ -23,13 +21,16 @@ namespace backend.Controllers.CRM
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ContactDto>>> GetContacts()
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var contacts = await _contactService.GetAllContactsAsync(tenantId);
-            return Ok(contacts);
+            try
+            {
+                var tenantId = GetTenantId();
+                var contacts = await _contactService.GetAllContactsAsync(tenantId);
+                return Ok(contacts);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<ContactDto>>(ex);
+            }
         }
 
         [HttpGet("customer/{customerId}")]
@@ -37,81 +38,81 @@ namespace backend.Controllers.CRM
             Guid customerId
         )
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var contacts = await _contactService.GetContactsByCustomerAsync(customerId, tenantId);
-            return Ok(contacts);
+            try
+            {
+                var tenantId = GetTenantId();
+                var contacts = await _contactService.GetContactsByCustomerAsync(
+                    customerId,
+                    tenantId
+                );
+                return Ok(contacts);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<ContactDto>>(ex);
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ContactDto>> GetContact(Guid id)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 var contact = await _contactService.GetContactByIdAsync(id, tenantId);
                 return Ok(contact);
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException<ContactDto>(ex);
             }
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Manager,Sales")]
         public async Task<ActionResult<ContactDto>> CreateContact(CreateContactDto contactDto)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var contact = await _contactService.CreateContactAsync(contactDto, tenantId);
-            return CreatedAtAction(nameof(GetContact), new { id = contact.Id }, contact);
+            try
+            {
+                var tenantId = GetTenantId();
+                var contact = await _contactService.CreateContactAsync(contactDto, tenantId);
+                return CreatedAtAction(nameof(GetContact), new { id = contact.Id }, contact);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<ContactDto>(ex);
+            }
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateContact(Guid id, UpdateContactDto contactDto)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 await _contactService.UpdateContactAsync(id, contactDto, tenantId);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException(ex);
             }
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteContact(Guid id)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 await _contactService.DeleteContactAsync(id, tenantId);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException(ex);
             }
         }
     }

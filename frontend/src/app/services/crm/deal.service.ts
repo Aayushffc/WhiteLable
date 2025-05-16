@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BaseCRMService } from './base-crm.service';
+import { AuthService } from '../auth/auth.service';
 
 export interface Deal {
   id: string;
@@ -67,7 +68,10 @@ export interface UpdateDealDTO {
   providedIn: 'root'
 })
 export class DealService extends BaseCRMService<Deal, CreateDealDTO, UpdateDealDTO> {
-  constructor(http: HttpClient) {
-    super(http, 'deals');
+  constructor(
+    http: HttpClient,
+    authService: AuthService
+  ) {
+    super(http, 'deals', authService);
   }
 }

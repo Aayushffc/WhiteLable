@@ -9,10 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers.CRM
 {
-    [Authorize]
-    [ApiController]
-    [Route("api/[controller]")]
-    public class CustomersController : ControllerBase
+    // [Authorize(Roles = "Admin,Manager,Sales")]
+    public class CustomersController : BaseCRMController
     {
         private readonly ICustomerService _customerService;
 
@@ -24,96 +22,94 @@ namespace backend.Controllers.CRM
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var customers = await _customerService.GetAllCustomersAsync(tenantId);
-            return Ok(customers);
+            try
+            {
+                var tenantId = GetTenantId();
+                var customers = await _customerService.GetAllCustomersAsync(tenantId);
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<CustomerDto>>(ex);
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<CustomerDto>> GetCustomer(Guid id)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 var customer = await _customerService.GetCustomerByIdAsync(id, tenantId);
                 return Ok(customer);
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException<CustomerDto>(ex);
             }
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<CustomerDto>> CreateCustomer(CreateCustomerDto customerDto)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var customer = await _customerService.CreateCustomerAsync(customerDto, tenantId);
-            return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
+            try
+            {
+                var tenantId = GetTenantId();
+                var customer = await _customerService.CreateCustomerAsync(customerDto, tenantId);
+                return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<CustomerDto>(ex);
+            }
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateCustomer(Guid id, UpdateCustomerDto customerDto)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 await _customerService.UpdateCustomerAsync(id, customerDto, tenantId);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException(ex);
             }
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCustomer(Guid id)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
             try
             {
+                var tenantId = GetTenantId();
                 await _customerService.DeleteCustomerAsync(id, tenantId);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound();
+                return HandleException(ex);
             }
         }
 
         [HttpGet("status/{status}")]
-        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersByStatus(
-            CustomerStatus status
-        )
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersByStatus(CustomerStatus status)
         {
-            var tenantIdClaim = User.FindFirst("TenantId")?.Value;
-            if (string.IsNullOrEmpty(tenantIdClaim))
-                return Unauthorized();
-
-            var tenantId = Guid.Parse(tenantIdClaim);
-            var customers = await _customerService.GetCustomersByStatusAsync(status, tenantId);
-            return Ok(customers);
+            try
+            {
+                var tenantId = GetTenantId();
+                var customers = await _customerService.GetCustomersByStatusAsync(status, tenantId);
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IEnumerable<CustomerDto>>(ex);
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, catchError, Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
 
 export interface LoginRequest {
   email: string;
@@ -19,6 +20,7 @@ export interface RegisterRequest {
 export interface AuthResponse {
   message: string;
   token: string;
+  tenantId?: string;
 }
 
 export interface EmailVerificationRequest {
@@ -31,34 +33,72 @@ export interface EmailVerificationRequest {
 })
 export class AuthService {
   private apiUrl = `${environment.apiUrl}/api/auth`;
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private tokenKey = 'auth_token';
+  private tenantIdKey = 'tenant_id';
+  private userKey = 'user_data';
+
+  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor(private http: HttpClient) {
-    // Check if token exists in localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
-      this.isAuthenticatedSubject.next(true);
-    }
-  }
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) {}
 
-  private saveToken(response: AuthResponse): void {
-    if (response.token) {
-      localStorage.setItem('token', response.token);
-      this.isAuthenticatedSubject.next(true);
-    }
-  }
-
-  login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap(response => this.saveToken(response))
+  login(data: LoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data).pipe(
+      tap(response => {
+        this.setToken(response.token);
+        if (response.tenantId) {
+          this.setTenantId(response.tenantId);
+        }
+        this.isAuthenticatedSubject.next(true);
+      })
     );
   }
 
-  register(userData: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
-      tap(response => this.saveToken(response))
+  register(data: RegisterRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
+      tap(response => {
+        this.setToken(response.token);
+        if (response.tenantId) {
+          this.setTenantId(response.tenantId);
+        }
+        this.isAuthenticatedSubject.next(true);
+      })
     );
+  }
+
+  logout(): void {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.tenantIdKey);
+    localStorage.removeItem(this.userKey);
+    this.isAuthenticatedSubject.next(false);
+    this.router.navigate(['/auth/login']);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  getTenantId(): string | null {
+    return localStorage.getItem(this.tenantIdKey);
+  }
+
+  private setToken(token: string): void {
+    localStorage.setItem(this.tokenKey, token);
+  }
+
+  private setTenantId(tenantId: string): void {
+    localStorage.setItem(this.tenantIdKey, tenantId);
+  }
+
+  private hasToken(): boolean {
+    return !!this.getToken();
+  }
+
+  isLoggedIn(): boolean {
+    return this.hasToken();
   }
 
   verifyEmail(data: EmailVerificationRequest): Observable<{ message: string }> {
@@ -77,19 +117,6 @@ export class AuthService {
     });
   }
 
-  logout(): void {
-    localStorage.removeItem('token');
-    this.isAuthenticatedSubject.next(false);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  }
-
-  isLoggedIn(): boolean {
-    return !!this.getToken();
-  }
-
   // Google Login SSO
 
   googleLogin(idToken: string): Observable<any> {
@@ -99,7 +126,11 @@ export class AuthService {
           message: response.message,
           token: response.token,
         };
-        this.saveToken(authResponse);
+        this.setToken(authResponse.token);
+        if (response.tenantId) {
+          this.setTenantId(response.tenantId);
+        }
+        this.isAuthenticatedSubject.next(true);
       }),
       catchError(error => {
         console.error('Google login error', error);
