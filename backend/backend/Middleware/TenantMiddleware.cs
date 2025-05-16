@@ -1,16 +1,19 @@
 using backend.DBContext;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Middleware;
 
 public class TenantMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<TenantMiddleware> _logger;
 
-    public TenantMiddleware(RequestDelegate next)
+    public TenantMiddleware(RequestDelegate next, ILogger<TenantMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context, TenantDbContextFactory dbContextFactory)
@@ -34,11 +37,9 @@ public class TenantMiddleware
 
         try
         {
-            // Create tenant-specific context
-            using var dbContext = await dbContextFactory.CreateDbContextAsync(tenantIdentifier);
-
-            // Verify tenant exists and is active
-            var tenant = await dbContext.Tenants.FirstOrDefaultAsync(t =>
+            // Get tenant info from main database
+            using var mainContext = dbContextFactory.CreateMainDbContext();
+            var tenant = await mainContext.Tenants.FirstOrDefaultAsync(t =>
                 t.Identifier == tenantIdentifier
             );
 
@@ -51,15 +52,19 @@ public class TenantMiddleware
                 return;
             }
 
+            // Create tenant-specific context
+            using var tenantContext = await dbContextFactory.CreateTenantDbContextAsync(tenantIdentifier);
+
             // Add tenant context to the current request
             context.Items["TenantId"] = tenant.Id;
             context.Items["TenantIdentifier"] = tenant.Identifier;
-            context.Items["TenantContext"] = dbContext;
+            context.Items["TenantContext"] = tenantContext;
 
             await _next(context);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error processing tenant request: {Message}", ex.Message);
             context.Response.StatusCode = 500;
             await context.Response.WriteAsJsonAsync(
                 new { message = "Error processing tenant request" }

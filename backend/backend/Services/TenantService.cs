@@ -163,11 +163,11 @@ public class TenantService : ITenantService
     {
         try
         {
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<TenantDbContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using var context = new ApplicationDbContext(options);
+            using var context = new TenantDbContext(options);
             await context.Database.MigrateAsync();
         }
         catch (Exception ex)

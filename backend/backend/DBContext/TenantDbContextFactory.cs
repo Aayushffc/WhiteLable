@@ -16,26 +16,25 @@ public class TenantDbContextFactory
             ?? throw new InvalidOperationException("Default connection string not found");
     }
 
-    public ApplicationDbContext CreateDbContext(string? tenantIdentifier = null)
+    public ApplicationDbContext CreateMainDbContext()
     {
-        if (string.IsNullOrEmpty(tenantIdentifier))
-        {
-            // Return the default context for tenant management
-            return new ApplicationDbContext(
-                new DbContextOptionsBuilder<ApplicationDbContext>()
-                    .UseSqlServer(_defaultConnectionString)
-                    .Options
-            );
-        }
-
-        // Get the tenant's connection string from the default database
-        using var defaultContext = new ApplicationDbContext(
+        return new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseSqlServer(_defaultConnectionString)
                 .Options
         );
+    }
 
-        var tenant = defaultContext.Tenants.FirstOrDefault(t => t.Identifier == tenantIdentifier);
+    public TenantDbContext CreateTenantDbContext(string tenantIdentifier)
+    {
+        if (string.IsNullOrEmpty(tenantIdentifier))
+        {
+            throw new ArgumentException("Tenant identifier is required", nameof(tenantIdentifier));
+        }
+
+        // Get the tenant's connection string from the default database
+        using var mainContext = CreateMainDbContext();
+        var tenant = mainContext.Tenants.FirstOrDefault(t => t.Identifier == tenantIdentifier);
 
         if (tenant == null)
         {
@@ -45,33 +44,23 @@ public class TenantDbContextFactory
         }
 
         // Create a new context with the tenant's connection string
-        return new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>()
+        return new TenantDbContext(
+            new DbContextOptionsBuilder<TenantDbContext>()
                 .UseSqlServer(tenant.ConnectionString)
                 .Options
         );
     }
 
-    public async Task<ApplicationDbContext> CreateDbContextAsync(string? tenantIdentifier = null)
+    public async Task<TenantDbContext> CreateTenantDbContextAsync(string tenantIdentifier)
     {
         if (string.IsNullOrEmpty(tenantIdentifier))
         {
-            // Return the default context for tenant management
-            return new ApplicationDbContext(
-                new DbContextOptionsBuilder<ApplicationDbContext>()
-                    .UseSqlServer(_defaultConnectionString)
-                    .Options
-            );
+            throw new ArgumentException("Tenant identifier is required", nameof(tenantIdentifier));
         }
 
         // Get the tenant's connection string from the default database
-        using var defaultContext = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseSqlServer(_defaultConnectionString)
-                .Options
-        );
-
-        var tenant = await defaultContext.Tenants.FirstOrDefaultAsync(t =>
+        using var mainContext = CreateMainDbContext();
+        var tenant = await mainContext.Tenants.FirstOrDefaultAsync(t =>
             t.Identifier == tenantIdentifier
         );
 
@@ -83,8 +72,8 @@ public class TenantDbContextFactory
         }
 
         // Create a new context with the tenant's connection string
-        return new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>()
+        return new TenantDbContext(
+            new DbContextOptionsBuilder<TenantDbContext>()
                 .UseSqlServer(tenant.ConnectionString)
                 .Options
         );
