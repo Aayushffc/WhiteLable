@@ -80,6 +80,7 @@ public class TenantMiddleware
             || path.StartsWithSegments("/api/account")
             || path.StartsWithSegments("/api/tenant/init")
             || path.StartsWithSegments("/api/Tenant")
+            || path.StartsWithSegments("/api/sso")
             || path.StartsWithSegments("/swagger")
             || path.StartsWithSegments("/health")
             || path.StartsWithSegments("/favicon.ico");

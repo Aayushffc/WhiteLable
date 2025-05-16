@@ -43,39 +43,43 @@ public class EmailService : IEmailService
         await SendEmailAsync(email, subject, body);
     }
 
-    private async Task SendEmailAsync(string to, string subject, string body)
+    public async Task SendEmailAsync(string to, string subject, string body)
     {
-        try
-        {
-            var smtpSettings = _configuration.GetSection("EmailSettings");
-            var smtpClient = new SmtpClient(smtpSettings["SmtpServer"])
-            {
-                Port = int.Parse(smtpSettings["Port"] ?? "587"),
-                Credentials = new NetworkCredential(
-                    smtpSettings["Username"],
-                    smtpSettings["Password"]
-                ),
-                EnableSsl = bool.Parse(smtpSettings["EnableSsl"] ?? "true"),
-            };
+        var smtpServer =
+            _configuration["EmailSettings:SmtpServer"]
+            ?? throw new InvalidOperationException("SMTP server is not configured");
+        var smtpPort = int.Parse(
+            _configuration["EmailSettings:SmtpPort"]
+                ?? throw new InvalidOperationException("SMTP port is not configured")
+        );
+        var smtpUsername =
+            _configuration["EmailSettings:SmtpUsername"]
+            ?? throw new InvalidOperationException("SMTP username is not configured");
+        var smtpPassword =
+            _configuration["EmailSettings:SmtpPassword"]
+            ?? throw new InvalidOperationException("SMTP password is not configured");
+        var fromEmail =
+            _configuration["EmailSettings:FromEmail"]
+            ?? throw new InvalidOperationException("From email is not configured");
+        var fromName =
+            _configuration["EmailSettings:FromName"]
+            ?? throw new InvalidOperationException("From name is not configured");
 
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress(
-                    smtpSettings["FromEmail"] ?? "",
-                    smtpSettings["FromName"] ?? ""
-                ),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true,
-            };
-            mailMessage.To.Add(to);
-
-            await smtpClient.SendMailAsync(mailMessage);
-        }
-        catch (Exception ex)
+        using var client = new SmtpClient(smtpServer, smtpPort)
         {
-            _logger.LogError(ex, "Error sending email to {Email}", to);
-            throw;
-        }
+            EnableSsl = true,
+            Credentials = new NetworkCredential(smtpUsername, smtpPassword),
+        };
+
+        using var message = new MailMessage
+        {
+            From = new MailAddress(fromEmail, fromName),
+            Subject = subject,
+            Body = body,
+            IsBodyHtml = true,
+        };
+
+        message.To.Add(to);
+        await client.SendMailAsync(message);
     }
 }
