@@ -1,9 +1,12 @@
-﻿using backend.DTOs.Auth;
+﻿using backend.DBContext;
+using backend.DTOs.Auth;
+using backend.DTOs.Tenant;
 using backend.Models;
 using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers;
 
@@ -12,18 +15,24 @@ namespace backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ITenantService _tenantService;
     private readonly ILogger<AuthController> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _context;
 
     public AuthController(
         IAuthService authService,
+        ITenantService tenantService,
         ILogger<AuthController> logger,
-        UserManager<ApplicationUser> userManager
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext context
     )
     {
         _authService = authService;
+        _tenantService = tenantService;
         _logger = logger;
         _userManager = userManager;
+        _context = context;
     }
 
     [HttpPost("register")]
@@ -33,6 +42,24 @@ public class AuthController : ControllerBase
         if (!success)
         {
             return BadRequest(new { message });
+        }
+
+        // If tenant identifier is provided, assign user to tenant
+        if (!string.IsNullOrEmpty(model.TenantIdentifier))
+        {
+            var tenant = await _context.Tenants.FirstOrDefaultAsync(t =>
+                t.Identifier == model.TenantIdentifier
+            );
+            if (tenant != null)
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user != null)
+                {
+                    await _tenantService.AssignUserToTenantAsync(
+                        new AssignUserToTenantDTO { UserId = user.Id, TenantId = tenant.Id }
+                    );
+                }
+            }
         }
 
         return Ok(new { message, token });
@@ -104,6 +131,9 @@ public class AuthController : ControllerBase
         }
 
         var roles = await _userManager.GetRolesAsync(user);
+        var tenantInfo = user.TenantId.HasValue
+            ? await _tenantService.GetTenantByIdAsync(user.TenantId.Value)
+            : (false, "No tenant assigned", null);
 
         return Ok(
             new
@@ -114,6 +144,14 @@ public class AuthController : ControllerBase
                 fullName = user.FullName,
                 emailConfirmed = user.EmailConfirmed,
                 roles = roles,
+                tenant = tenantInfo.success
+                    ? new
+                    {
+                        id = tenantInfo.tenant?.Id,
+                        name = tenantInfo.tenant?.Name,
+                        identifier = tenantInfo.tenant?.Identifier,
+                    }
+                    : null,
             }
         );
     }

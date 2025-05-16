@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using System.Text;
+using AutoMapper;
 using backend.DBContext;
+using backend.Middleware;
 using backend.Models;
 using backend.Services;
 using backend.Services.Interfaces;
@@ -42,6 +44,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISsoService, SsoService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddSingleton<TenantDbContextFactory>();
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // CORS Configuration with fallback
 var allowedOriginsRaw =
@@ -52,7 +59,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
     });
 });
 
@@ -209,6 +216,9 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 }
+
+// Add tenant middleware
+app.UseMiddleware<TenantMiddleware>();
 
 // Middleware
 app.UseCors();
