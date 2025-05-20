@@ -30,21 +30,9 @@ public class SsoController : ControllerBase
     }
 
     [HttpPost("microsoft")]
-    public async Task<IActionResult> MicrosoftLogin([FromBody] GoogleLoginDTO model)
+    public async Task<IActionResult> MicrosoftLogin([FromBody] MicrosoftLoginDTO model)
     {
         var (success, message, token) = await _ssoService.MicrosoftLoginAsync(model.IdToken);
-        if (!success)
-        {
-            return BadRequest(new { message });
-        }
-
-        return Ok(new { message, token });
-    }
-
-    [HttpPost("facebook")]
-    public async Task<IActionResult> FacebookLogin([FromBody] GoogleLoginDTO model)
-    {
-        var (success, message, token) = await _ssoService.FacebookLoginAsync(model.IdToken);
         if (!success)
         {
             return BadRequest(new { message });

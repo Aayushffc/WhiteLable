@@ -138,4 +138,25 @@ export class AuthService {
       })
     );
   }
+
+  // Microsoft Login SSO
+  microsoftLogin(idToken: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl.replace('/auth', '/sso')}/microsoft`, { idToken }).pipe(
+      tap(response => {
+        const authResponse: AuthResponse = {
+          message: response.message,
+          token: response.token,
+        };
+        this.setToken(authResponse.token);
+        if (response.tenantId) {
+          this.setTenantId(response.tenantId);
+        }
+        this.isAuthenticatedSubject.next(true);
+      }),
+      catchError(error => {
+        console.error('Microsoft login error', error);
+        return throwError(() => error);
+      })
+    );
+  }
 }

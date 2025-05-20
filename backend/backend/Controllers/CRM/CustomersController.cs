@@ -98,7 +98,9 @@ namespace backend.Controllers.CRM
         }
 
         [HttpGet("status/{status}")]
-        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersByStatus(CustomerStatus status)
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersByStatus(
+            CustomerStatus status
+        )
         {
             try
             {

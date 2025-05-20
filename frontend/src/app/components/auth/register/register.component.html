@@ -106,28 +106,21 @@
         </div>
 
         <div class="mt-6 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-          >
-            <img
-              class="h-5 w-5"
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google logo"
-            />
-            <span class="ml-2">Google</span>
-          </button>
+          <div
+            id="google-btn"
+            class="w-full flex justify-center items-center min-h-[42px]"
+          ></div>
 
           <button
             type="button"
-            class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+            (click)="handleMicrosoftLogin()"
+            class="w-full h-[42px] inline-flex justify-center items-center border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50"
           >
             <img
-              class="h-5 w-5"
-              src="https://www.svgrepo.com/show/475647/microsoft-color.svg"
+              class="h-6 w-auto"
+              src="https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg"
               alt="Microsoft logo"
             />
-            <span class="ml-2">Microsoft</span>
           </button>
         </div>
       </div>
@@ -179,5 +172,9 @@
         </button>
       </div>
     </form>
+
+    <div *ngIf="errorMessage" class="mt-2 text-center text-sm text-red-600">
+      {{ errorMessage }}
+    </div>
   </div>
 </div>
