@@ -1,6 +1,7 @@
 using backend.Models;
 using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace backend.Services;
@@ -178,7 +179,7 @@ public class RoleService : IRoleService
     {
         try
         {
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
+            var roles = await _roleManager.Roles.Select(r => r.Name!).ToListAsync();
             return (true, "Roles retrieved successfully", roles);
         }
         catch (Exception ex)

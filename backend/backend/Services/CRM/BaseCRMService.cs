@@ -5,10 +5,10 @@ namespace backend.Services.CRM
 {
     public abstract class BaseCRMService
     {
-        protected readonly ApplicationDbContext _context;
+        protected readonly TenantDbContext _context;
         protected readonly IMapper _mapper;
 
-        protected BaseCRMService(ApplicationDbContext context, IMapper mapper)
+        protected BaseCRMService(TenantDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;

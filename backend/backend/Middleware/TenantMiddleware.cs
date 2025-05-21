@@ -9,14 +9,20 @@ public class TenantMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<TenantMiddleware> _logger;
+    private readonly TenantDbContextFactory _dbContextFactory;
 
-    public TenantMiddleware(RequestDelegate next, ILogger<TenantMiddleware> logger)
+    public TenantMiddleware(
+        RequestDelegate next,
+        ILogger<TenantMiddleware> logger,
+        TenantDbContextFactory dbContextFactory
+    )
     {
         _next = next;
         _logger = logger;
+        _dbContextFactory = dbContextFactory;
     }
 
-    public async Task InvokeAsync(HttpContext context, TenantDbContextFactory dbContextFactory)
+    public async Task InvokeAsync(HttpContext context)
     {
         // Skip tenant resolution for authentication endpoints and public endpoints
         if (IsPublicEndpoint(context.Request.Path))
@@ -38,7 +44,7 @@ public class TenantMiddleware
         try
         {
             // Get tenant info from main database
-            using var mainContext = dbContextFactory.CreateMainDbContext();
+            using var mainContext = _dbContextFactory.CreateMainDbContext();
             var tenant = await mainContext.Tenants.FirstOrDefaultAsync(t =>
                 t.Identifier == tenantIdentifier
             );
@@ -52,8 +58,8 @@ public class TenantMiddleware
                 return;
             }
 
-            // Create tenant-specific context
-            using var tenantContext = await dbContextFactory.CreateTenantDbContextAsync(
+            // Create tenant-specific context for CRM data
+            using var tenantContext = await _dbContextFactory.CreateTenantDbContextAsync(
                 tenantIdentifier
             );
 

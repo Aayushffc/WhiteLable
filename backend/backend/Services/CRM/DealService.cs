@@ -8,7 +8,7 @@ namespace backend.Services.CRM
 {
     public class DealService : BaseCRMService, IDealService
     {
-        public DealService(ApplicationDbContext context, IMapper mapper)
+        public DealService(TenantDbContext context, IMapper mapper)
             : base(context, mapper) { }
 
         public async Task<IEnumerable<DealDto>> GetAllDealsAsync(Guid tenantId)

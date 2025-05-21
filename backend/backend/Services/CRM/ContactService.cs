@@ -8,7 +8,7 @@ namespace backend.Services.CRM
 {
     public class ContactService : BaseCRMService, IContactService
     {
-        public ContactService(ApplicationDbContext context, IMapper mapper)
+        public ContactService(TenantDbContext context, IMapper mapper)
             : base(context, mapper) { }
 
         public async Task<IEnumerable<ContactDto>> GetAllContactsAsync(Guid tenantId)

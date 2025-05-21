@@ -22,10 +22,31 @@ builder
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
 
+// Add HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
+
 // Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
+
+// Register TenantDbContext factory as singleton
+builder.Services.AddSingleton<TenantDbContextFactory>();
+
+// Register TenantDbContext as scoped service
+builder.Services.AddScoped<TenantDbContext>(sp =>
+{
+    var factory = sp.GetRequiredService<TenantDbContextFactory>();
+    var httpContext = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+    var tenantIdentifier = httpContext?.Items["TenantIdentifier"] as string;
+
+    if (string.IsNullOrEmpty(tenantIdentifier))
+    {
+        throw new InvalidOperationException("Tenant identifier not found in context");
+    }
+
+    return factory.CreateTenantDbContext(tenantIdentifier);
+});
 
 // Identity Configuration with custom password requirements
 builder
@@ -46,7 +67,6 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISsoService, SsoService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
-builder.Services.AddSingleton<TenantDbContextFactory>();
 
 // Register CRM services
 builder.Services.AddScoped<ICustomerService, CustomerService>();
@@ -227,10 +247,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Add tenant middleware
-app.UseMiddleware<TenantMiddleware>();
-
-// Middleware
+// Middleware order
 app.UseCors();
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -246,6 +263,9 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
+
+// Add tenant middleware after authentication but before endpoints
+app.UseMiddleware<TenantMiddleware>();
 
 app.MapControllers();
 

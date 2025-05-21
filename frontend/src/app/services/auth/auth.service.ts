@@ -40,10 +40,19 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
+  private currentUserSubject = new BehaviorSubject<any>(null);
+  public currentUser$ = this.currentUserSubject.asObservable();
+
   constructor(
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) {
+    // Load user from localStorage on service initialization
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      this.currentUserSubject.next(JSON.parse(storedUser));
+    }
+  }
 
   login(data: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data).pipe(
@@ -158,5 +167,10 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  getCurrentUserId(): string | null {
+    const currentUser = this.currentUserSubject.value;
+    return currentUser?.id || null;
   }
 }

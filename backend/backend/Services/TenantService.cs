@@ -73,7 +73,7 @@ public class TenantService : ITenantService
                 Domain = dto.Domain,
                 SubscriptionPlan = dto.SubscriptionPlan,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
             _context.Tenants.Add(tenant);
@@ -93,15 +93,9 @@ public class TenantService : ITenantService
 
     private string GenerateDatabaseName(string? domain, string identifier)
     {
-        // Clean domain name (remove special characters and spaces)
-        var cleanDomain = domain?.ToLower()
-            .Replace(" ", "")
-            .Replace(".", "")
-            .Replace("-", "")
-            .Replace("_", "") ?? "tenant";
-
         // Clean identifier (remove special characters and spaces)
-        var cleanIdentifier = identifier.ToLower()
+        var cleanIdentifier = identifier
+            .ToLower()
             .Replace(" ", "")
             .Replace(".", "")
             .Replace("-", "")
@@ -109,7 +103,7 @@ public class TenantService : ITenantService
 
         // Combine domain and identifier with timestamp to ensure uniqueness
         var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-        return $"{cleanDomain}_{cleanIdentifier}_{timestamp}_db";
+        return $"{cleanIdentifier}_{timestamp}_db";
     }
 
     private async Task<string> CreateTenantDatabaseAsync(string databaseName)
@@ -131,7 +125,8 @@ public class TenantService : ITenantService
                 $"SELECT COUNT(*) FROM sys.databases WHERE name = '{databaseName}'",
                 connection
             );
-            var exists = (int)await checkCommand.ExecuteScalarAsync() > 0;
+            var result = await checkCommand.ExecuteScalarAsync();
+            var exists = result != null && Convert.ToInt32(result) > 0;
             if (exists)
             {
                 _logger.LogWarning("Database {DatabaseName} already exists", databaseName);
