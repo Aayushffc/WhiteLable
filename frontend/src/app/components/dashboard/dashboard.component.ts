@@ -26,7 +26,7 @@ export class DashboardComponent implements OnInit {
   }
 
   navigateToTenantManagement(): void {
-    this.router.navigate(['/tenant/list']);
+    this.router.navigate(['/tenant']);
   }
 
   logout(): void {

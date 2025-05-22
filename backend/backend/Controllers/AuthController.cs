@@ -171,4 +171,18 @@ public class AuthController : ControllerBase
 
         return Ok(new { role });
     }
+
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users = await _userManager.GetUsersInRoleAsync("User");
+        var userDtos = users.Select(u => new
+        {
+            id = u.Id,
+            email = u.Email,
+            name = u.FullName,
+            tenantId = u.TenantId,
+        });
+        return Ok(new { users = userDtos });
+    }
 }

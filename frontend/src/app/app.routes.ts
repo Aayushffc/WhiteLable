@@ -49,6 +49,14 @@ export const routes: Routes = [
 
   // Tenant Routes
   {
+    path: 'tenant',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/tenant/tenant-dashboard/tenant-dashboard.component').then(
+        (m) => m.TenantDashboardComponent
+      ),
+  },
+  {
     path: 'tenant/list',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -70,6 +78,30 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/tenant/tenant-details/tenant-details.component').then(
         (m) => m.TenantDetailsComponent
+      ),
+  },
+  {
+    path: 'tenant/edit/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/tenant/tenant-edit/tenant-edit.component').then(
+        (m) => m.TenantEditComponent
+      ),
+  },
+  {
+    path: 'tenant/:id/users',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/tenant/tenant-user-management/tenant-user-management.component').then(
+        (m) => m.TenantUserManagementComponent
+      ),
+  },
+  {
+    path: 'tenant/user-tenants',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/tenant/user-tenants/user-tenants.component').then(
+        (m) => m.UserTenantsComponent
       ),
   },
 

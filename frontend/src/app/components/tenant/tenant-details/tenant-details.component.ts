@@ -25,19 +25,19 @@ import { AuthService } from '../../../services/auth/auth.service';
               {{ isEditing ? 'Edit Tenant' : 'Tenant Details' }}
             </h1>
             <div class="flex space-x-4">
-              <button
+            <button
                 *ngIf="!isEditing"
                 (click)="startEditing()"
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-              >
+            >
                 Edit Tenant
-              </button>
-              <button
+            </button>
+            <button
                 (click)="navigateToTenantList()"
                 class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
+            >
                 Back to List
-              </button>
+            </button>
             </div>
           </div>
         </div>
@@ -56,14 +56,14 @@ import { AuthService } from '../../../services/auth/auth.service';
             <div class="ml-3">
               <p class="text-sm text-red-700">{{ errorMessage }}</p>
             </div>
-          </div>
-        </div>
+              </div>
+              </div>
 
         <!-- Tenant Details Form -->
         <div class="bg-white shadow rounded-lg p-6">
           <form *ngIf="tenant" (ngSubmit)="onSubmit()" class="space-y-6">
             <!-- Name -->
-            <div>
+              <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
               <input
                 type="text"
@@ -74,10 +74,10 @@ import { AuthService } from '../../../services/auth/auth.service';
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 required
               >
-            </div>
+              </div>
 
             <!-- Identifier -->
-            <div>
+              <div>
               <label for="identifier" class="block text-sm font-medium text-gray-700">Identifier</label>
               <input
                 type="text"
@@ -88,10 +88,10 @@ import { AuthService } from '../../../services/auth/auth.service';
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 required
               >
-            </div>
+              </div>
 
             <!-- Domain -->
-            <div>
+              <div>
               <label for="domain" class="block text-sm font-medium text-gray-700">Domain</label>
               <input
                 type="text"
@@ -102,10 +102,10 @@ import { AuthService } from '../../../services/auth/auth.service';
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 required
               >
-            </div>
+              </div>
 
             <!-- Status -->
-            <div>
+              <div>
               <label for="isActive" class="block text-sm font-medium text-gray-700">Status</label>
               <select
                 id="isActive"
@@ -209,7 +209,7 @@ export class TenantDetailsComponent implements OnInit {
     if (!id) {
       this.router.navigate(['/tenant/list']);
       return;
-    }
+  }
 
     this.loading = true;
     this.errorMessage = null;
@@ -253,7 +253,7 @@ export class TenantDetailsComponent implements OnInit {
         this.originalTenant = { ...response.tenant };
         this.isEditing = false;
         this.loading = false;
-      },
+        },
       error: (error: any) => {
         this.loading = false;
         if (error.status === 403) {
@@ -263,10 +263,10 @@ export class TenantDetailsComponent implements OnInit {
         }
         console.error('Error updating tenant:', error);
       }
-    });
-  }
+      });
+    }
 
   navigateToTenantList(): void {
-    this.router.navigate(['/tenant/list']);
+    this.router.navigate(['/tenant']);
   }
 }

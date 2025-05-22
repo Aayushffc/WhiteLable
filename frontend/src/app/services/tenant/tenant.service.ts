@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
+import { switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 export interface Tenant {
   id: string;
@@ -45,6 +47,25 @@ export interface UpdateTenantDTO {
 export interface AssignUserToTenantDTO {
   userId: string;
   tenantId: string;
+}
+
+export interface TenantResponse {
+  tenant: Tenant;
+}
+
+export interface TenantsResponse {
+  tenants: Tenant[];
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface UsersResponse {
+  users: User[];
+  userIds?: string[];
 }
 
 @Injectable({
@@ -118,17 +139,44 @@ export class TenantService {
     );
   }
 
-  getUsersInTenant(tenantId: string): Observable<{ message: string; userIds: string[] }> {
-    return this.http.get<{ message: string; userIds: string[] }>(
+  getUsersInTenant(tenantId: string): Observable<UsersResponse> {
+    return this.http.get<UsersResponse>(
       `${this.apiUrl}/${tenantId}/users`,
       { headers: this.getHeaders() }
     );
   }
 
-  getUserTenants(userId: string): Observable<{ message: string; tenants: Tenant[] }> {
-    return this.http.get<{ message: string; tenants: Tenant[] }>(
+  getAllUsers(): Observable<UsersResponse> {
+    return this.http.get<UsersResponse>(
+      `${this.apiUrl.replace('/tenant', '/auth')}/users`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  getUserTenants(userId: string): Observable<TenantsResponse> {
+    return this.http.get<TenantsResponse>(
       `${this.apiUrl}/users/${userId}/tenants`,
       { headers: this.getHeaders() }
     );
+  }
+
+  getAllUserTenants(): Observable<TenantsResponse> {
+    return this.http.get<UsersResponse>(`${this.apiUrl.replace('/tenant', '/auth')}/users`).pipe(
+      switchMap(userResponse => {
+        const userId = userResponse.users[0]?.id;
+        if (!userId) {
+          return of({ message: 'No users found', tenants: [] });
+        }
+        return this.http.get<TenantsResponse>(`${this.apiUrl}/users/${userId}/tenants`);
+      })
+    );
+  }
+
+  addUserToTenant(tenantId: string, userId: string): Observable<void> {
+    const dto: AssignUserToTenantDTO = {
+      userId: userId,
+      tenantId: tenantId
+    };
+    return this.http.post<void>(`${this.apiUrl}/assign`, dto, { headers: this.getHeaders() });
   }
 }
