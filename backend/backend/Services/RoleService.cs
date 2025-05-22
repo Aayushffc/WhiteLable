@@ -90,11 +90,23 @@ public class RoleService : IRoleService
                 return (false, "Role not found");
             }
 
-            if (await _userManager.IsInRoleAsync(user, roleName))
+            // Get user's current roles
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            // Remove all existing roles
+            if (currentRoles.Any())
             {
-                return (false, "User already has this role");
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                {
+                    return (
+                        false,
+                        string.Join(", ", removeResult.Errors.Select(e => e.Description))
+                    );
+                }
             }
 
+            // Assign the new role
             var result = await _userManager.AddToRoleAsync(user, roleName);
             if (result.Succeeded)
             {

@@ -1,7 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RoleService, Role } from '../../../services/role/role.service';
+import { RoleService, Role, RoleAssignment } from '../../../services/role/role.service';
+
+interface User {
+  id: string;
+  email: string;
+  roles: string[];
+}
 
 @Component({
   selector: 'app-role-management',
@@ -13,10 +19,13 @@ export class RoleManagementComponent implements OnInit {
   roles: Role[] = [];
   newRoleName: string = '';
   selectedRole: string = '';
-  usersInRole: any[] = [];
+  usersInRole: User[] = [];
   loading = false;
   error: string | null = null;
   successMessage: string | null = null;
+  selectedUser: User | null = null;
+  userEmail: string = '';
+  userRoles: string[] = [];
 
   constructor(private roleService: RoleService) {}
 
@@ -86,6 +95,70 @@ export class RoleManagementComponent implements OnInit {
       },
       error: (err) => {
         this.error = 'Failed to load users in role';
+        this.loading = false;
+      }
+    });
+  }
+
+  loadUserRoles(userId: string): void {
+    this.loading = true;
+    this.selectedUser = this.usersInRole.find(user => user.id === userId) || null;
+
+    if (!this.selectedUser) {
+      this.error = 'User not found';
+      this.loading = false;
+      return;
+    }
+
+    this.roleService.getUserRoles(userId).subscribe({
+      next: (response) => {
+        this.userRoles = response.roles;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to load user roles';
+        this.loading = false;
+      }
+    });
+  }
+
+  assignRoleToUser(userId: string, roleName: string): void {
+    if (!this.selectedUser) {
+      this.error = 'No user selected';
+      return;
+    }
+
+    this.loading = true;
+    const assignment: RoleAssignment = { userId, roleName };
+    this.roleService.assignRoleToUser(assignment).subscribe({
+      next: (response) => {
+        this.successMessage = response.message;
+        this.loadUserRoles(userId);
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to assign role to user';
+        this.loading = false;
+      }
+    });
+  }
+
+  removeRoleFromUser(userId: string, roleName: string): void {
+    if (!this.selectedUser) {
+      this.error = 'No user selected';
+      return;
+    }
+
+    this.loading = true;
+    const assignment: RoleAssignment = { userId, roleName };
+    this.roleService.removeRoleFromUser(assignment).subscribe({
+      next: (response) => {
+        this.successMessage = response.message;
+        this.loadUserRoles(userId);
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to remove role from user';
         this.loading = false;
       }
     });
