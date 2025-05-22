@@ -94,7 +94,55 @@
         </div>
       </div>
 
-      <!-- Add more dashboard cards here -->
+      <!-- Role Management Card -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg
+                class="h-6 w-6 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">
+                  Role Management
+                </dt>
+                <dd>
+                  <div class="text-lg font-medium text-gray-900">
+                    Manage user roles
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-5 py-3">
+          <div class="text-sm">
+            <a
+              (click)="toggleRoleManagement()"
+              class="font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
+            >
+              {{ showRoleManagement ? "Hide role management" : "Manage roles" }}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Management Component -->
+    <div *ngIf="showRoleManagement" class="mt-8">
+      <app-role-management></app-role-management>
     </div>
   </main>
 </div>

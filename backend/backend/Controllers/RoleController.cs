@@ -99,18 +99,6 @@ public class RoleController : ControllerBase
         return Ok(new { message });
     }
 
-    [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetUserRoles(string userId)
-    {
-        var (success, message, roles) = await _roleService.GetUserRolesAsync(userId);
-        if (!success)
-        {
-            return BadRequest(new { message });
-        }
-
-        return Ok(new { message, roles });
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetAllRoles()
     {
@@ -123,7 +111,7 @@ public class RoleController : ControllerBase
         return Ok(new { message, roles });
     }
 
-    [HttpGet("{roleName}/users")]
+    [HttpGet("by-role/{roleName}/users")]
     public async Task<IActionResult> GetUsersInRole(string roleName)
     {
         var (success, message, users) = await _roleService.GetUsersInRoleAsync(roleName);
@@ -133,5 +121,17 @@ public class RoleController : ControllerBase
         }
 
         return Ok(new { message, users });
+    }
+
+    [HttpGet("by-user/{userId}")]
+    public async Task<IActionResult> GetUserRoles(string userId)
+    {
+        var (success, message, roles) = await _roleService.GetUserRolesAsync(userId);
+        if (!success)
+        {
+            return BadRequest(new { message });
+        }
+
+        return Ok(new { message, roles });
     }
 }
