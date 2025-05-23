@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace backend.DBContext;
 
-public class TenantDbContextFactory
+public class TenantDbContextFactory : IDesignTimeDbContextFactory<TenantDbContext>
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<TenantDbContextFactory> _logger;
@@ -149,5 +150,25 @@ public class TenantDbContextFactory
             _logger.LogError(ex, $"Error creating tenant database for {tenantIdentifier}");
             throw;
         }
+    }
+
+    public TenantDbContext CreateDbContext(string[] args)
+    {
+        // Get the connection string from appsettings.json
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        }
+
+        var optionsBuilder = new DbContextOptionsBuilder<TenantDbContext>();
+        optionsBuilder.UseSqlServer(connectionString);
+
+        return new TenantDbContext(optionsBuilder.Options);
     }
 }

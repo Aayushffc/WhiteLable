@@ -5,6 +5,7 @@ using backend.DTOs.CRM;
 using backend.Services.CRM;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers.CRM
 {
@@ -13,7 +14,11 @@ namespace backend.Controllers.CRM
     {
         private readonly IContactService _contactService;
 
-        public ContactsController(IContactService contactService)
+        public ContactsController(
+            IContactService contactService,
+            ILogger<ContactsController> logger
+        )
+            : base(logger)
         {
             _contactService = contactService;
         }

@@ -260,7 +260,7 @@ public class AuthService : IAuthService
         var roles = await _userManager.GetRolesAsync(user);
         var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role));
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
@@ -273,7 +273,16 @@ public class AuthService : IAuthService
             new Claim("FirstName", user.FirstName),
             new Claim("LastName", user.LastName),
             new Claim("FullName", user.FullName ?? string.Empty),
-        }.Concat(roleClaims);
+        };
+
+        // Add tenant claims if tenant exists
+        if (user.TenantId.HasValue)
+        {
+            claims.Add(new Claim("TenantId", user.TenantId.Value.ToString()));
+            claims.Add(new Claim("TenantIdentifier", user.TenantIdentifier ?? string.Empty));
+        }
+
+        claims.AddRange(roleClaims);
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(

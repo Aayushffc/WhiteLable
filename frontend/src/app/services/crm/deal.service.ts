@@ -3,65 +3,41 @@ import { HttpClient } from '@angular/common/http';
 import { BaseCRMService } from './base-crm.service';
 import { AuthService } from '../auth/auth.service';
 
+export enum DealStage {
+  Qualification = 0,
+  Proposal = 1,
+  Negotiation = 2,
+  ClosedWon = 3,
+  ClosedLost = 4
+}
+
 export interface Deal {
   id: string;
   title: string;
   description?: string;
   value: number;
-  currency: string;
-  status: DealStatus;
-  stage: string;
+  stage: DealStage;
   customerId: string;
-  customerName: string;
-  contactId?: string;
-  expectedCloseDate?: Date;
-  probability: number;
-  notes?: string;
+  expectedCloseDate: Date;
   createdAt: Date;
   updatedAt?: Date;
-  history: DealHistory[];
-}
-
-export interface DealHistory {
-  stage: string;
-  date: Date;
-  notes: string;
-}
-
-export enum DealStatus {
-  New = 'New',
-  Contacted = 'Contacted',
-  Qualified = 'Qualified',
-  Proposal = 'Proposal',
-  Negotiation = 'Negotiation',
-  Won = 'Won',
-  Lost = 'Lost'
 }
 
 export interface CreateDealDTO {
   title: string;
   description?: string;
   value: number;
-  currency: string;
-  status: DealStatus;
+  stage: DealStage;
   customerId: string;
-  contactId?: string;
-  expectedCloseDate?: Date;
-  probability: number;
-  notes?: string;
+  expectedCloseDate: Date;
 }
 
 export interface UpdateDealDTO {
   title?: string;
   description?: string;
   value?: number;
-  currency?: string;
-  status?: DealStatus;
-  customerId?: string;
-  contactId?: string;
+  stage?: DealStage;
   expectedCloseDate?: Date;
-  probability?: number;
-  notes?: string;
 }
 
 @Injectable({

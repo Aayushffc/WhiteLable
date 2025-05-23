@@ -100,7 +100,11 @@ export class CustomerDetailsComponent implements OnInit {
   loadCustomer(id: string): void {
     this.customerService.getById(id).subscribe({
       next: (response) => {
-        this.customer = response.data;
+        if ('data' in response) {
+          this.customer = response.data;
+        } else {
+          this.customer = response as Customer;
+        }
       },
       error: (error) => {
         console.error('Error loading customer:', error);

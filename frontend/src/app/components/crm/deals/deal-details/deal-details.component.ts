@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DealService, Deal } from '../../../../services/crm/deal.service';
+import { DealService, Deal, DealStage } from '../../../../services/crm/deal.service';
 
 @Component({
   selector: 'app-deal-details',
@@ -37,8 +37,8 @@ import { DealService, Deal } from '../../../../services/crm/deal.service';
               </div>
 
               <div>
-                <h3 class="text-sm font-medium text-gray-500">Customer</h3>
-                <p class="mt-1 text-lg text-gray-900">{{ deal.customerName }}</p>
+                <h3 class="text-sm font-medium text-gray-500">Customer ID</h3>
+                <p class="mt-1 text-lg text-gray-900">{{ deal.customerId }}</p>
               </div>
 
               <div>
@@ -52,26 +52,13 @@ import { DealService, Deal } from '../../../../services/crm/deal.service';
                   [class]="getStageClass(deal.stage)"
                   class="px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full"
                 >
-                  {{ deal.stage }}
+                  {{ getStageName(deal.stage) }}
                 </span>
               </div>
 
               <div>
                 <h3 class="text-sm font-medium text-gray-500">Expected Close Date</h3>
                 <p class="mt-1 text-lg text-gray-900">{{ deal.expectedCloseDate | date:'mediumDate' }}</p>
-              </div>
-
-              <div>
-                <h3 class="text-sm font-medium text-gray-500">Probability</h3>
-                <div class="mt-1">
-                  <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      class="bg-blue-600 h-2.5 rounded-full"
-                      [style.width.%]="deal.probability"
-                    ></div>
-                  </div>
-                  <p class="mt-1 text-sm text-gray-600">{{ deal.probability }}%</p>
-                </div>
               </div>
 
               <div>
@@ -89,24 +76,6 @@ import { DealService, Deal } from '../../../../services/crm/deal.service';
               <h3 class="text-sm font-medium text-gray-500">Description</h3>
               <p class="mt-1 text-lg text-gray-900">{{ deal.description || 'No description provided' }}</p>
             </div>
-
-            <div class="mt-6">
-              <h3 class="text-sm font-medium text-gray-500">Deal History</h3>
-              <div class="mt-2 space-y-4">
-                <div *ngFor="let history of deal.history" class="flex items-start">
-                  <div class="flex-shrink-0">
-                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span class="text-blue-600 text-sm font-medium">{{ history.stage[0] }}</span>
-                    </div>
-                  </div>
-                  <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-900">{{ history.stage }}</p>
-                    <p class="text-sm text-gray-500">{{ history.date | date:'medium' }}</p>
-                    <p class="text-sm text-gray-500">{{ history.notes }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -119,6 +88,7 @@ import { DealService, Deal } from '../../../../services/crm/deal.service';
 })
 export class DealDetailsComponent implements OnInit {
   deal: Deal | null = null;
+  DealStage = DealStage;
 
   constructor(
     private route: ActivatedRoute,
@@ -136,7 +106,7 @@ export class DealDetailsComponent implements OnInit {
   loadDeal(id: string): void {
     this.dealService.getById(id).subscribe({
       next: (response) => {
-        this.deal = response.data;
+        this.deal = 'data' in response ? response.data : response;
       },
       error: (error) => {
         console.error('Error loading deal:', error);
@@ -162,14 +132,25 @@ export class DealDetailsComponent implements OnInit {
     this.router.navigate(['/crm/deals']);
   }
 
-  getStageClass(stage: string): string {
-    const stageClasses: { [key: string]: string } = {
-      'Qualification': 'bg-blue-100 text-blue-800',
-      'Proposal': 'bg-yellow-100 text-yellow-800',
-      'Negotiation': 'bg-purple-100 text-purple-800',
-      'Closed Won': 'bg-green-100 text-green-800',
-      'Closed Lost': 'bg-red-100 text-red-800',
+  getStageClass(stage: DealStage): string {
+    const stageClasses: { [key: number]: string } = {
+      [DealStage.Qualification]: 'bg-blue-100 text-blue-800',
+      [DealStage.Proposal]: 'bg-yellow-100 text-yellow-800',
+      [DealStage.Negotiation]: 'bg-purple-100 text-purple-800',
+      [DealStage.ClosedWon]: 'bg-green-100 text-green-800',
+      [DealStage.ClosedLost]: 'bg-red-100 text-red-800',
     };
     return stageClasses[stage] || 'bg-gray-100 text-gray-800';
+  }
+
+  getStageName(stage: DealStage): string {
+    const stageNames: { [key: number]: string } = {
+      [DealStage.Qualification]: 'Qualification',
+      [DealStage.Proposal]: 'Proposal',
+      [DealStage.Negotiation]: 'Negotiation',
+      [DealStage.ClosedWon]: 'Closed Won',
+      [DealStage.ClosedLost]: 'Closed Lost',
+    };
+    return stageNames[stage] || 'Unknown';
   }
 }

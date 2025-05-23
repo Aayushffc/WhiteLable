@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, catchError, Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
@@ -20,7 +20,11 @@ export interface RegisterRequest {
 export interface AuthResponse {
   message: string;
   token: string;
-  tenantId?: string;
+  tenant?: {
+    id: string;
+    identifier: string;
+    name: string;
+  };
 }
 
 export interface EmailVerificationRequest {
@@ -58,8 +62,8 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data).pipe(
       tap(response => {
         this.setToken(response.token);
-        if (response.tenantId) {
-          this.setTenantId(response.tenantId);
+        if (response.tenant?.identifier) {
+          this.setTenantId(response.tenant.identifier);
         }
         this.isAuthenticatedSubject.next(true);
       })
@@ -70,8 +74,8 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
       tap(response => {
         this.setToken(response.token);
-        if (response.tenantId) {
-          this.setTenantId(response.tenantId);
+        if (response.tenant?.identifier) {
+          this.setTenantId(response.tenant.identifier);
         }
         this.isAuthenticatedSubject.next(true);
       })
@@ -131,19 +135,11 @@ export class AuthService {
   googleLogin(idToken: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl.replace('/auth', '/sso')}/google`, { idToken }).pipe(
       tap(response => {
-        const authResponse: AuthResponse = {
-          message: response.message,
-          token: response.token,
-        };
-        this.setToken(authResponse.token);
-        if (response.tenantId) {
-          this.setTenantId(response.tenantId);
+        this.setToken(response.token);
+        if (response.tenant?.identifier) {
+          this.setTenantId(response.tenant.identifier);
         }
         this.isAuthenticatedSubject.next(true);
-      }),
-      catchError(error => {
-        console.error('Google login error', error);
-        return throwError(() => error);
       })
     );
   }
@@ -152,19 +148,11 @@ export class AuthService {
   microsoftLogin(idToken: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl.replace('/auth', '/sso')}/microsoft`, { idToken }).pipe(
       tap(response => {
-        const authResponse: AuthResponse = {
-          message: response.message,
-          token: response.token,
-        };
-        this.setToken(authResponse.token);
-        if (response.tenantId) {
-          this.setTenantId(response.tenantId);
+        this.setToken(response.token);
+        if (response.tenant?.identifier) {
+          this.setTenantId(response.tenant.identifier);
         }
         this.isAuthenticatedSubject.next(true);
-      }),
-      catchError(error => {
-        console.error('Microsoft login error', error);
-        return throwError(() => error);
       })
     );
   }
@@ -172,5 +160,25 @@ export class AuthService {
   getCurrentUserId(): string | null {
     const currentUser = this.currentUserSubject.value;
     return currentUser?.id || null;
+  }
+
+  private getHeaders(): HttpHeaders {
+    const token = this.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+  }
+
+  getProfile(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/profile`, { headers: this.getHeaders() }).pipe(
+      tap(response => {
+        if (response.tenant?.identifier) {
+          this.setTenantId(response.tenant.identifier);
+        }
+        this.currentUserSubject.next(response);
+        localStorage.setItem(this.userKey, JSON.stringify(response));
+      })
+    );
   }
 }

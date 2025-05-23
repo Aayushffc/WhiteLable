@@ -14,7 +14,11 @@ namespace backend.Controllers.CRM
     {
         private readonly ICustomerService _customerService;
 
-        public CustomersController(ICustomerService customerService)
+        public CustomersController(
+            ICustomerService customerService,
+            ILogger<CustomersController> logger
+        )
+            : base(logger)
         {
             _customerService = customerService;
         }

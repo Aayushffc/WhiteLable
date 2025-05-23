@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DealService, CreateDealDTO } from '../../../../services/crm/deal.service';
+import { DealService, CreateDealDTO, DealStage } from '../../../../services/crm/deal.service';
 import { CustomerService, Customer } from '../../../../services/crm/customer.service';
 
 @Component({
@@ -66,11 +66,11 @@ import { CustomerService, Customer } from '../../../../services/crm/customer.ser
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">Select a stage</option>
-              <option value="Qualification">Qualification</option>
-              <option value="Proposal">Proposal</option>
-              <option value="Negotiation">Negotiation</option>
-              <option value="Closed Won">Closed Won</option>
-              <option value="Closed Lost">Closed Lost</option>
+              <option [value]="DealStage.Qualification">Qualification</option>
+              <option [value]="DealStage.Proposal">Proposal</option>
+              <option [value]="DealStage.Negotiation">Negotiation</option>
+              <option [value]="DealStage.ClosedWon">Closed Won</option>
+              <option [value]="DealStage.ClosedLost">Closed Lost</option>
             </select>
             <div *ngIf="dealForm.get('stage')?.errors?.['required'] && dealForm.get('stage')?.touched" class="text-red-500 text-sm mt-1">
               Stage is required
@@ -87,21 +87,6 @@ import { CustomerService, Customer } from '../../../../services/crm/customer.ser
             />
             <div *ngIf="dealForm.get('expectedCloseDate')?.errors?.['required'] && dealForm.get('expectedCloseDate')?.touched" class="text-red-500 text-sm mt-1">
               Expected close date is required
-            </div>
-          </div>
-
-          <div>
-            <label for="probability" class="block text-sm font-medium text-gray-700">Probability (%)</label>
-            <input
-              type="number"
-              id="probability"
-              formControlName="probability"
-              min="0"
-              max="100"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-            <div *ngIf="dealForm.get('probability')?.errors?.['required'] && dealForm.get('probability')?.touched" class="text-red-500 text-sm mt-1">
-              Probability is required
             </div>
           </div>
 
@@ -139,6 +124,7 @@ import { CustomerService, Customer } from '../../../../services/crm/customer.ser
 export class DealCreateComponent implements OnInit {
   dealForm: FormGroup;
   customers: Customer[] = [];
+  DealStage = DealStage; // Make enum available in template
 
   constructor(
     private fb: FormBuilder,
@@ -152,7 +138,6 @@ export class DealCreateComponent implements OnInit {
       value: ['', [Validators.required, Validators.min(0)]],
       stage: ['', Validators.required],
       expectedCloseDate: ['', Validators.required],
-      probability: ['', [Validators.required, Validators.min(0), Validators.max(100)]],
       description: [''],
     });
   }
@@ -164,7 +149,7 @@ export class DealCreateComponent implements OnInit {
   loadCustomers(): void {
     this.customerService.getAll().subscribe({
       next: (response) => {
-        this.customers = response.data;
+        this.customers = Array.isArray(response) ? response : response.data;
       },
       error: (error) => {
         console.error('Error loading customers:', error);
@@ -174,7 +159,16 @@ export class DealCreateComponent implements OnInit {
 
   onSubmit(): void {
     if (this.dealForm.valid) {
-      const dealData: CreateDealDTO = this.dealForm.value;
+      const formValue = this.dealForm.value;
+      const dealData: CreateDealDTO = {
+        title: formValue.title,
+        customerId: formValue.customerId,
+        value: formValue.value,
+        stage: parseInt(formValue.stage),
+        expectedCloseDate: formValue.expectedCloseDate,
+        description: formValue.description
+      };
+
       this.dealService.create(dealData).subscribe({
         next: () => {
           this.router.navigate(['/crm/deals']);
