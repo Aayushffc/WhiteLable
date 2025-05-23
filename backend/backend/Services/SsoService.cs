@@ -29,7 +29,7 @@ public class SsoService : ISsoService
         _authService = authService;
     }
 
-    public async Task<(bool success, string message, string? token)> GoogleLoginAsync(
+    public async Task<(bool success, string message, string? token, string? email)> GoogleLoginAsync(
         string idToken
     )
     {
@@ -62,6 +62,7 @@ public class SsoService : ISsoService
                     return (
                         false,
                         string.Join(", ", result.Errors.Select(e => e.Description)),
+                        null,
                         null
                     );
                 }
@@ -70,20 +71,20 @@ public class SsoService : ISsoService
             }
             else if (user.PasswordHash != null)
             {
-                return (false, "This email is already registered. Please use regular login.", null);
+                return (false, "This email is already registered. Please use regular login.", null, null);
             }
 
             var token = await _authService.GenerateJwtTokenAsync(user);
-            return (true, "Google login successful", token);
+            return (true, "Google login successful", token, payload.Email);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Google login failed");
-            return (false, "Google authentication failed", null);
+            return (false, "Google authentication failed", null, null);
         }
     }
 
-    public async Task<(bool success, string message, string? token)> MicrosoftLoginAsync(
+    public async Task<(bool success, string message, string? token, string? email)> MicrosoftLoginAsync(
         string idToken
     )
     {
@@ -94,7 +95,7 @@ public class SsoService : ISsoService
 
             if (jsonToken == null)
             {
-                return (false, "Invalid token format", null);
+                return (false, "Invalid token format", null, null);
             }
 
             var email = jsonToken.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
@@ -104,7 +105,7 @@ public class SsoService : ISsoService
 
             if (string.IsNullOrEmpty(email))
             {
-                return (false, "Email not found in token", null);
+                return (false, "Email not found in token", null, null);
             }
 
             var user = await _userManager.FindByEmailAsync(email);
@@ -135,6 +136,7 @@ public class SsoService : ISsoService
                     return (
                         false,
                         string.Join(", ", result.Errors.Select(e => e.Description)),
+                        null,
                         null
                     );
                 }
@@ -143,16 +145,16 @@ public class SsoService : ISsoService
             }
             else if (user.PasswordHash != null)
             {
-                return (false, "This email is already registered. Please use regular login.", null);
+                return (false, "This email is already registered. Please use regular login.", null, null);
             }
 
             var token = await _authService.GenerateJwtTokenAsync(user);
-            return (true, "Microsoft login successful", token);
+            return (true, "Microsoft login successful", token, email);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Microsoft login failed");
-            return (false, "Microsoft authentication failed", null);
+            return (false, "Microsoft authentication failed", null, null);
         }
     }
 }

@@ -31,6 +31,10 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/tenant']);
   }
 
+  navigateToCrmDashboard(): void {
+    this.router.navigate(['/crm']);
+  }
+
   toggleRoleManagement(): void {
     this.showRoleManagement = !this.showRoleManagement;
   }

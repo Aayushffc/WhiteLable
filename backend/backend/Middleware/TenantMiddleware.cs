@@ -34,9 +34,13 @@ public class TenantMiddleware
         var tenantIdentifier = GetTenantIdentifier(context);
         if (string.IsNullOrEmpty(tenantIdentifier))
         {
+            _logger.LogWarning("Tenant identifier not found in request");
             context.Response.StatusCode = 400;
             await context.Response.WriteAsJsonAsync(
-                new { message = "Tenant identifier is required" }
+                new
+                {
+                    message = "Tenant identifier is required. Please ensure you are logged in and have a valid tenant.",
+                }
             );
             return;
         }
@@ -49,11 +53,28 @@ public class TenantMiddleware
                 t.Identifier == tenantIdentifier
             );
 
-            if (tenant == null || !tenant.IsActive)
+            if (tenant == null)
             {
+                _logger.LogWarning("Tenant not found: {TenantIdentifier}", tenantIdentifier);
                 context.Response.StatusCode = 404;
                 await context.Response.WriteAsJsonAsync(
-                    new { message = "Tenant not found or inactive" }
+                    new
+                    {
+                        message = $"Tenant with identifier '{tenantIdentifier}' not found. Please contact your administrator.",
+                    }
+                );
+                return;
+            }
+
+            if (!tenant.IsActive)
+            {
+                _logger.LogWarning("Tenant is inactive: {TenantIdentifier}", tenantIdentifier);
+                context.Response.StatusCode = 403;
+                await context.Response.WriteAsJsonAsync(
+                    new
+                    {
+                        message = "Your tenant account is inactive. Please contact your administrator.",
+                    }
                 );
                 return;
             }
@@ -75,7 +96,10 @@ public class TenantMiddleware
             _logger.LogError(ex, "Error processing tenant request: {Message}", ex.Message);
             context.Response.StatusCode = 500;
             await context.Response.WriteAsJsonAsync(
-                new { message = "Error processing tenant request" }
+                new
+                {
+                    message = "An error occurred while processing your request. Please try again later.",
+                }
             );
         }
     }

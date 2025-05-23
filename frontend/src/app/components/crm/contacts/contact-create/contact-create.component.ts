@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ContactService, CreateContactDTO } from '../../../../services/crm/contact.service';
+import { CustomerService, Customer } from '../../../../services/crm/customer.service';
 
 @Component({
   selector: 'app-contact-create',
@@ -14,16 +15,31 @@ import { ContactService, CreateContactDTO } from '../../../../services/crm/conta
         <h1 class="text-2xl font-bold text-gray-800 mb-6">Add New Contact</h1>
 
         <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="space-y-6">
-          <div>
-            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              id="name"
-              formControlName="name"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-            <div *ngIf="contactForm.get('name')?.errors?.['required'] && contactForm.get('name')?.touched" class="text-red-500 text-sm mt-1">
-              Name is required
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+              <input
+                type="text"
+                id="firstName"
+                formControlName="firstName"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              <div *ngIf="contactForm.get('firstName')?.errors?.['required'] && contactForm.get('firstName')?.touched" class="text-red-500 text-sm mt-1">
+                First name is required
+              </div>
+            </div>
+
+            <div>
+              <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+              <input
+                type="text"
+                id="lastName"
+                formControlName="lastName"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              <div *ngIf="contactForm.get('lastName')?.errors?.['required'] && contactForm.get('lastName')?.touched" class="text-red-500 text-sm mt-1">
+                Last name is required
+              </div>
             </div>
           </div>
 
@@ -40,6 +56,23 @@ import { ContactService, CreateContactDTO } from '../../../../services/crm/conta
             </div>
             <div *ngIf="contactForm.get('email')?.errors?.['email'] && contactForm.get('email')?.touched" class="text-red-500 text-sm mt-1">
               Please enter a valid email address
+            </div>
+          </div>
+
+          <div>
+            <label for="customerId" class="block text-sm font-medium text-gray-700">Customer</label>
+            <select
+              id="customerId"
+              formControlName="customerId"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">Select a customer</option>
+              <option *ngFor="let customer of customers" [value]="customer.id">
+                {{ customer.name }} ({{ customer.company || 'No company' }})
+              </option>
+            </select>
+            <div *ngIf="contactForm.get('customerId')?.errors?.['required'] && contactForm.get('customerId')?.touched" class="text-red-500 text-sm mt-1">
+              Customer is required
             </div>
           </div>
 
@@ -124,23 +157,42 @@ import { ContactService, CreateContactDTO } from '../../../../services/crm/conta
     </div>
   `,
 })
-export class ContactCreateComponent {
+export class ContactCreateComponent implements OnInit {
   contactForm: FormGroup;
+  customers: Customer[] = [];
 
   constructor(
     private fb: FormBuilder,
     private contactService: ContactService,
+    private customerService: CustomerService,
     private router: Router
   ) {
     this.contactForm = this.fb.group({
-      name: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
+      customerId: ['', Validators.required],
       phone: [''],
       company: [''],
       position: [''],
       department: [''],
       address: [''],
       notes: [''],
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadCustomers();
+  }
+
+  loadCustomers(): void {
+    this.customerService.getAll().subscribe({
+      next: (response) => {
+        this.customers = Array.isArray(response) ? response : response.data;
+      },
+      error: (error) => {
+        console.error('Error loading customers:', error);
+      },
     });
   }
 

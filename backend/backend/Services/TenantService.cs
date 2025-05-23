@@ -145,7 +145,10 @@ public class TenantService : ITenantService
                 return string.Empty;
             }
 
-            return defaultConnection.Replace("Database=WhiteLabel", $"Database={databaseName}");
+            // Extract server and other parameters from default connection
+            var builder = new SqlConnectionStringBuilder(defaultConnection);
+            builder.InitialCatalog = databaseName; // Set the database name
+            return builder.ConnectionString;
         }
         catch (Exception ex)
         {
@@ -163,7 +166,15 @@ public class TenantService : ITenantService
                 .Options;
 
             using var context = new TenantDbContext(options);
-            await context.Database.MigrateAsync();
+
+            // Ensure database exists
+            await context.Database.EnsureCreatedAsync();
+
+            // Apply any pending migrations
+            if (context.Database.GetPendingMigrations().Any())
+            {
+                await context.Database.MigrateAsync();
+            }
         }
         catch (Exception ex)
         {

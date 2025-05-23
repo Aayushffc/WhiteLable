@@ -47,22 +47,46 @@ public class AuthController : ControllerBase
         // If tenant identifier is provided, assign user to tenant
         if (!string.IsNullOrEmpty(model.TenantIdentifier))
         {
-            var tenant = await _context.Tenants.FirstOrDefaultAsync(t =>
+            var existingTenant = await _context.Tenants.FirstOrDefaultAsync(t =>
                 t.Identifier == model.TenantIdentifier
             );
-            if (tenant != null)
+            if (existingTenant != null)
             {
-                var user = await _userManager.FindByEmailAsync(model.Email);
-                if (user != null)
+                var newUser = await _userManager.FindByEmailAsync(model.Email);
+                if (newUser != null)
                 {
                     await _tenantService.AssignUserToTenantAsync(
-                        new AssignUserToTenantDTO { UserId = user.Id, TenantId = tenant.Id }
+                        new AssignUserToTenantDTO
+                        {
+                            UserId = newUser.Id,
+                            TenantId = existingTenant.Id,
+                        }
                     );
                 }
             }
         }
 
-        return Ok(new { message, token });
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        var tenant =
+            user?.TenantId.HasValue == true
+                ? await _tenantService.GetTenantByIdAsync(user.TenantId.Value)
+                : (false, "No tenant", null);
+
+        return Ok(
+            new
+            {
+                message,
+                token,
+                tenant = tenant.success
+                    ? new
+                    {
+                        id = tenant.tenant?.Id,
+                        identifier = tenant.tenant?.Identifier,
+                        name = tenant.tenant?.Name,
+                    }
+                    : null,
+            }
+        );
     }
 
     [HttpPost("login")]
@@ -74,7 +98,27 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message });
         }
 
-        return Ok(new { message, token });
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        var tenant =
+            user?.TenantId.HasValue == true
+                ? await _tenantService.GetTenantByIdAsync(user.TenantId.Value)
+                : (false, "No tenant", null);
+
+        return Ok(
+            new
+            {
+                message,
+                token,
+                tenant = tenant.success
+                    ? new
+                    {
+                        id = tenant.tenant?.Id,
+                        identifier = tenant.tenant?.Identifier,
+                        name = tenant.tenant?.Name,
+                    }
+                    : null,
+            }
+        );
     }
 
     [HttpPost("verify-email")]
@@ -175,13 +219,14 @@ public class AuthController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await _userManager.GetUsersInRoleAsync("User");
+        var users = await _userManager.Users.ToListAsync();
         var userDtos = users.Select(u => new
         {
             id = u.Id,
             email = u.Email,
             name = u.FullName,
             tenantId = u.TenantId,
+            roles = _userManager.GetRolesAsync(u).Result,
         });
         return Ok(new { users = userDtos });
     }

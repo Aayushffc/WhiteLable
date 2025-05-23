@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { CustomerService, Customer } from '../../../../services/crm/customer.service';
 
 @Component({
@@ -10,7 +10,15 @@ import { CustomerService, Customer } from '../../../../services/crm/customer.ser
   template: `
     <div class="container mx-auto px-4 py-8">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Customers</h1>
+        <div class="flex items-center space-x-4">
+          <button
+            (click)="goBack()"
+            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          >
+            Back
+          </button>
+          <h1 class="text-2xl font-bold text-gray-800">Customers</h1>
+        </div>
         <a
           routerLink="create"
           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
@@ -80,7 +88,10 @@ import { CustomerService, Customer } from '../../../../services/crm/customer.ser
 export class CustomerListComponent implements OnInit {
   customers: Customer[] = [];
 
-  constructor(private customerService: CustomerService) {}
+  constructor(
+    private customerService: CustomerService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadCustomers();
@@ -89,7 +100,7 @@ export class CustomerListComponent implements OnInit {
   loadCustomers(): void {
     this.customerService.getAll().subscribe({
       next: (response) => {
-        this.customers = response.data;
+        this.customers = Array.isArray(response) ? response : response.data;
       },
       error: (error) => {
         console.error('Error loading customers:', error);
@@ -108,5 +119,9 @@ export class CustomerListComponent implements OnInit {
         },
       });
     }
+  }
+
+  goBack(): void {
+    this.router.navigate(['/crm']);
   }
 }

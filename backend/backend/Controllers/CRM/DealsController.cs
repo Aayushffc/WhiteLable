@@ -6,6 +6,7 @@ using backend.Models.CRM;
 using backend.Services.CRM;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers.CRM
 {
@@ -14,9 +15,10 @@ namespace backend.Controllers.CRM
     {
         private readonly IDealService _dealService;
 
-        public DealsController(IDealService dealService)
+        public DealsController(IDealService dealService, ILogger<DealsController> logger)
+            : base(logger)
         {
-            _dealService = dealService;
+            _dealService = dealService ?? throw new ArgumentNullException(nameof(dealService));
         }
 
         [HttpGet]
@@ -24,6 +26,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Getting all deals for tenant");
                 var tenantId = GetTenantId();
                 var deals = await _dealService.GetAllDealsAsync(tenantId);
                 return Ok(deals);
@@ -39,6 +42,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Getting deals for customer {CustomerId}", customerId);
                 var tenantId = GetTenantId();
                 var deals = await _dealService.GetDealsByCustomerAsync(customerId, tenantId);
                 return Ok(deals);
@@ -54,6 +58,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Getting deals for stage {Stage}", stage);
                 var tenantId = GetTenantId();
                 var deals = await _dealService.GetDealsByStageAsync(stage, tenantId);
                 return Ok(deals);
@@ -69,6 +74,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Getting deal {DealId}", id);
                 var tenantId = GetTenantId();
                 var deal = await _dealService.GetDealByIdAsync(id, tenantId);
                 return Ok(deal);
@@ -85,6 +91,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Creating new deal");
                 var tenantId = GetTenantId();
                 var deal = await _dealService.CreateDealAsync(dealDto, tenantId);
                 return CreatedAtAction(nameof(GetDeal), new { id = deal.Id }, deal);
@@ -101,6 +108,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Updating deal {DealId}", id);
                 var tenantId = GetTenantId();
                 await _dealService.UpdateDealAsync(id, dealDto, tenantId);
                 return NoContent();
@@ -117,6 +125,7 @@ namespace backend.Controllers.CRM
         {
             try
             {
+                _logger.LogInformation("Deleting deal {DealId}", id);
                 var tenantId = GetTenantId();
                 await _dealService.DeleteDealAsync(id, tenantId);
                 return NoContent();

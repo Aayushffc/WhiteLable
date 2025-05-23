@@ -216,8 +216,12 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var tenantFactory = scope.ServiceProvider.GetRequiredService<TenantDbContextFactory>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
     try
     {
+        // Apply migrations to main database
         dbContext.Database.Migrate();
 
         // Create initial roles if they don't exist
@@ -248,10 +252,42 @@ using (var scope = app.Services.CreateScope())
                 await userManager.AddToRoleAsync(adminUser, "Admin");
             }
         }
+
+        // Apply migrations to all tenant databases
+        var tenants = await dbContext.Tenants.ToListAsync();
+        foreach (var tenant in tenants)
+        {
+            try
+            {
+                logger.LogInformation($"Applying migrations for tenant: {tenant.Identifier}");
+
+                // Create options for TenantDbContext
+                var options = new DbContextOptionsBuilder<TenantDbContext>()
+                    .UseSqlServer(tenant.ConnectionString)
+                    .Options;
+
+                // Create context and apply migrations
+                using var tenantContext = new TenantDbContext(options);
+                if (tenantContext.Database.GetPendingMigrations().Any())
+                {
+                    await tenantContext.Database.MigrateAsync();
+                    logger.LogInformation(
+                        $"Successfully applied migrations for tenant: {tenant.Identifier}"
+                    );
+                }
+                else
+                {
+                    logger.LogInformation($"No pending migrations for tenant: {tenant.Identifier}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Failed to apply migrations for tenant {tenant.Identifier}");
+            }
+        }
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Failed to apply database migrations or create initial roles");
         throw;
     }

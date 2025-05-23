@@ -32,8 +32,13 @@ import { ContactService, Contact } from '../../../../services/crm/contact.servic
           <div class="p-6">
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <h3 class="text-sm font-medium text-gray-500">Name</h3>
-                <p class="mt-1 text-lg text-gray-900">{{ contact.name }}</p>
+                <h3 class="text-sm font-medium text-gray-500">First Name</h3>
+                <p class="mt-1 text-lg text-gray-900">{{ contact.firstName }}</p>
+              </div>
+
+              <div>
+                <h3 class="text-sm font-medium text-gray-500">Last Name</h3>
+                <p class="mt-1 text-lg text-gray-900">{{ contact.lastName }}</p>
               </div>
 
               <div>
@@ -110,7 +115,7 @@ export class ContactDetailsComponent implements OnInit {
   loadContact(id: string): void {
     this.contactService.getById(id).subscribe({
       next: (response) => {
-        this.contact = response.data;
+        this.contact = 'data' in response ? response.data : response;
       },
       error: (error) => {
         console.error('Error loading contact:', error);
